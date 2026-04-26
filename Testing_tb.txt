@@ -1,0 +1,207 @@
+// ============================================================
+//  tb_jscan_decompressor.v
+//  Testbench for Joint-Scan Decompressor
+// ============================================================
+`timescale 1ns/1ps
+
+module tb_jscan_decompressor;
+
+    // Parameters
+    parameter C      = 2;
+    parameter W      = 9;
+    parameter N      = 8;
+    parameter R_ROWS = 4;
+    parameter R_COLS = 4;
+    parameter RA     = 2;
+    parameter CA     = 2;
+
+    // DUT signals
+    reg clk, rst_n;
+    reg [1:0] mode;
+
+    // PSAS
+    reg scan_en, seed_en;
+    reg [C-1:0] comp_in;
+
+    // PRAS
+    reg [RA-1:0] row_addr;
+    reg [CA-1:0] col_addr;
+    reg pras_wr_en;
+    reg pras_data_in;
+
+    // Outputs
+    wire [N-1:0] scan_out;
+    wire pras_data_out;
+
+    // =========================================================
+    // DUT
+    // =========================================================
+    jscan_decompressor #(
+        .C(C), .W(W), .N(N),
+        .R_ROWS(R_ROWS), .R_COLS(R_COLS),
+        .RA(RA), .CA(CA)
+    ) dut (
+        .clk(clk),
+        .rst_n(rst_n),
+        .mode(mode),
+        .scan_en(scan_en),
+        .seed_en(seed_en),
+        .comp_in(comp_in),
+        .row_addr(row_addr),
+        .col_addr(col_addr),
+        .pras_wr_en(pras_wr_en),
+        .pras_data_in(pras_data_in),
+        .scan_out(scan_out),
+        .pras_data_out(pras_data_out)
+    );
+
+    // =========================================================
+    // Clock
+    // =========================================================
+    initial clk = 0;
+    always #5 clk = ~clk;
+
+    // =========================================================
+    // Helper Tasks
+    // =========================================================
+
+    // ----- PSAS cycle -----
+    task psas_cycle;
+        input [1:0] data;
+        input seed;
+        begin
+            comp_in = data;
+            seed_en = seed;
+            @(posedge clk); #1;
+            $display("[PSAS] comp=%b seed=%b LFSR=%b scan_out=%b",
+                     data, seed, dut.lfsr, scan_out);
+        end
+    endtask
+
+    // ----- PRAS write -----
+    task pras_write;
+        input [RA-1:0] r;
+        input [CA-1:0] c;
+        input d;
+        begin
+            row_addr     = r;
+            col_addr     = c;
+            pras_data_in = d;
+            pras_wr_en   = 1;
+            @(posedge clk); #1;
+            $display("[PRAS WRITE] row=%0d col=%0d data=%b",
+                     r, c, d);
+        end
+    endtask
+
+    // ----- PRAS read -----
+    task pras_read;
+        input [RA-1:0] r;
+        input [CA-1:0] c;
+        begin
+            row_addr   = r;
+            col_addr   = c;
+            pras_wr_en = 0;
+            #1;
+            $display("[PRAS READ ] row=%0d col=%0d → %b",
+                     r, c, pras_data_out);
+        end
+    endtask
+
+    integer i, j;
+
+    // =========================================================
+    // TEST SEQUENCE
+    // =========================================================
+    initial begin
+        $display("===== JSCAN TEST START =====");
+
+        // Init
+        rst_n = 0;
+        mode  = 2'b00;
+
+        scan_en = 0; seed_en = 0; comp_in = 0;
+        row_addr = 0; col_addr = 0;
+        pras_wr_en = 0; pras_data_in = 0;
+
+        repeat(3) @(posedge clk);
+        rst_n = 1;
+
+        // =====================================================
+        // MODE 00 - IDLE
+        // =====================================================
+        $display("\n--- MODE 00 : IDLE ---");
+        mode = 2'b00;
+        scan_en = 1;
+        pras_wr_en = 1;
+
+        repeat(3) @(posedge clk);
+        $display("scan_out=%b pras_out=%b (expect 0,0)",
+                 scan_out, pras_data_out);
+
+        scan_en = 0; pras_wr_en = 0;
+
+        // =====================================================
+        // MODE 10 - PSAS ONLY
+        // =====================================================
+        $display("\n--- MODE 10 : PSAS ONLY ---");
+        mode = 2'b01;
+        scan_en = 1;
+
+        for (i = 0; i < 8; i = i + 1)
+            psas_cycle(i[1:0], (i < 4));
+
+        scan_en = 0;
+
+        // =====================================================
+        // MODE 01 - PRAS ONLY
+        // =====================================================
+        $display("\n--- MODE 01 : PRAS ONLY ---");
+        mode = 2'b10;
+
+        // Write pattern
+        for (i = 0; i < R_ROWS; i = i + 1)
+            for (j = 0; j < R_COLS; j = j + 1)
+                pras_write(i, j, i[0] ^ j[0]);
+
+        // Read back
+        for (i = 0; i < R_ROWS; i = i + 1)
+            for (j = 0; j < R_COLS; j = j + 1)
+                pras_read(i, j);
+
+        // =====================================================
+        // MODE 11 - BOTH (IMPORTANT)
+        // =====================================================
+        $display("\n--- MODE 11 : BOTH ACTIVE ---");
+        mode = 2'b01;
+        scan_en = 1;
+
+        for (i = 0; i < 6; i = i + 1) begin
+            comp_in      = i[1:0];
+            seed_en      = 1;
+            row_addr     = i % R_ROWS;
+            col_addr     = (i+1) % R_COLS;
+            pras_wr_en   = 1;
+            pras_data_in = i[0];
+
+            @(posedge clk); #1;
+
+            $display("[BOTH] comp=%b LFSR=%b scan=%b | PRAS[%0d][%0d]=%b",
+                     comp_in, dut.lfsr, scan_out,
+                     row_addr, col_addr, pras_data_out);
+        end
+
+        scan_en = 0;
+        pras_wr_en = 0;
+
+        $display("\n===== TEST COMPLETE =====");
+        #20 $finish;
+    end
+
+    // Dump waveform
+    initial begin
+        $dumpfile("jscan.vcd");
+        $dumpvars(0, tb_jscan_decompressor);
+    end
+
+endmodule
