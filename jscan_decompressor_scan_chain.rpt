@@ -1,0 +1,107 @@
+Reporting 8 scan chains (muxed_scan)
+ 
+Chain 1: AutoChain_1 
+  scan_in:      dft_sdi_1 
+  scan_out:     dft_sdo_1   
+  shift_enable: SE (active high) 
+  clock_domain: jscan_decompressor (edge: rise)
+  length: 6
+    bit 1 	lfsr_reg[6]  <clk (rise)>  
+    bit 2 	lfsr_reg[7]  <clk (rise)>  
+    bit 3 	lfsr_reg[8]  <clk (rise)>  
+    bit 4 	lfsr_reg[9]  <clk (rise)>  
+    bit 5 	lfsr_reg[10]  <clk (rise)>  
+    bit 6 	lfsr_reg[11]  <clk (rise)>  
+------------------------
+Chain 2: AutoChain_2 
+  scan_in:      dft_sdi_2 
+  scan_out:     dft_sdo_2   
+  shift_enable: SE (active high) 
+  clock_domain: jscan_decompressor (edge: rise)
+  length: 6
+    bit 1 	lfsr_reg[12]  <clk (rise)>  
+    bit 2 	lfsr_reg[13]  <clk (rise)>  
+    bit 3 	lfsr_reg[14]  <clk (rise)>  
+    bit 4 	lfsr_reg[15]  <clk (rise)>  
+    bit 5 	pras_mem_reg[0]  <clk (rise)>  
+    bit 6 	pras_mem_reg[1]  <clk (rise)>  
+------------------------
+Chain 3: AutoChain_3 
+  scan_in:      dft_sdi_3 
+  scan_out:     dft_sdo_3   
+  shift_enable: SE (active high) 
+  clock_domain: jscan_decompressor (edge: rise)
+  length: 6
+    bit 1 	pras_mem_reg[2]  <clk (rise)>  
+    bit 2 	pras_mem_reg[3]  <clk (rise)>  
+    bit 3 	pras_mem_reg[4]  <clk (rise)>  
+    bit 4 	pras_mem_reg[5]  <clk (rise)>  
+    bit 5 	pras_mem_reg[6]  <clk (rise)>  
+    bit 6 	pras_mem_reg[7]  <clk (rise)>  
+------------------------
+Chain 4: AutoChain_4 
+  scan_in:      dft_sdi_4 
+  scan_out:     dft_sdo_4   
+  shift_enable: SE (active high) 
+  clock_domain: jscan_decompressor (edge: rise)
+  length: 6
+    bit 1 	pras_mem_reg[8]  <clk (rise)>  
+    bit 2 	pras_mem_reg[9]  <clk (rise)>  
+    bit 3 	pras_mem_reg[10]  <clk (rise)>  
+    bit 4 	pras_mem_reg[11]  <clk (rise)>  
+    bit 5 	pras_mem_reg[12]  <clk (rise)>  
+    bit 6 	pras_mem_reg[13]  <clk (rise)>  
+------------------------
+Chain 5: AutoChain_5 
+  scan_in:      dft_sdi_5 
+  scan_out:     dft_sdo_5   
+  shift_enable: SE (active high) 
+  clock_domain: jscan_decompressor (edge: rise)
+  length: 6
+    bit 1 	pras_mem_reg[14]  <clk (rise)>  
+    bit 2 	pras_mem_reg[15]  <clk (rise)>  
+    bit 3 	pras_mem_reg[16]  <clk (rise)>  
+    bit 4 	pras_mem_reg[17]  <clk (rise)>  
+    bit 5 	pras_mem_reg[18]  <clk (rise)>  
+    bit 6 	pras_mem_reg[19]  <clk (rise)>  
+------------------------
+Chain 6: AutoChain_6 
+  scan_in:      dft_sdi_6 
+  scan_out:     dft_sdo_6   
+  shift_enable: SE (active high) 
+  clock_domain: jscan_decompressor (edge: rise)
+  length: 6
+    bit 1 	pras_mem_reg[20]  <clk (rise)>  
+    bit 2 	pras_mem_reg[21]  <clk (rise)>  
+    bit 3 	pras_mem_reg[22]  <clk (rise)>  
+    bit 4 	pras_mem_reg[23]  <clk (rise)>  
+    bit 5 	pras_mem_reg[24]  <clk (rise)>  
+    bit 6 	pras_mem_reg[25]  <clk (rise)>  
+------------------------
+Chain 7: AutoChain_7 
+  scan_in:      dft_sdi_7 
+  scan_out:     dft_sdo_7   
+  shift_enable: SE (active high) 
+  clock_domain: jscan_decompressor (edge: rise)
+  length: 6
+    bit 1 	pras_mem_reg[26]  <clk (rise)>  
+    bit 2 	pras_mem_reg[27]  <clk (rise)>  
+    bit 3 	pras_mem_reg[28]  <clk (rise)>  
+    bit 4 	pras_mem_reg[29]  <clk (rise)>  
+    bit 5 	pras_mem_reg[30]  <clk (rise)>  
+    bit 6 	pras_mem_reg[31]  <clk (rise)>  
+------------------------
+Chain 8: top_chain 
+  scan_in:      scan_in 
+  scan_out:     scan_out_1   
+  shift_enable: SE (active high) 
+  clock_domain: jscan_decompressor (edge: rise)
+  length: 6
+    bit 1 	lfsr_reg[0]  <clk (rise)>  
+    bit 2 	lfsr_reg[1]  <clk (rise)>  
+    bit 3 	lfsr_reg[2]  <clk (rise)>  
+    bit 4 	lfsr_reg[3]  <clk (rise)>  
+    bit 5 	lfsr_reg[4]  <clk (rise)>  
+    bit 6 	lfsr_reg[5]  <clk (rise)>  
+------------------------
+
