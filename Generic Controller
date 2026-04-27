@@ -1,0 +1,153 @@
+controller generic
+// ============================================================
+//  jscan_decompressor (SCALABLE VERSION - Vivado Safe)
+// ============================================================
+
+module jscan_decompressor #(
+    parameter C      = 4,   // compressed inputs (n)
+    parameter W      = 16,  // LFSR width
+    parameter N      = 32,  // outputs (m > n)
+
+    parameter R_ROWS = 4,
+    parameter R_COLS = 4,
+    parameter RA     = 2,
+    parameter CA     = 2
+)(
+    input  wire             clk,
+    input  wire             rst_n,
+
+    input  wire [1:0]       mode,
+
+    // PSAS
+    input  wire             scan_en,
+    input  wire             seed_en,
+    input  wire [C-1:0]     comp_in,
+
+    // PRAS
+    input  wire [RA-1:0]    row_addr,
+    input  wire [CA-1:0]    col_addr,
+    input  wire             pras_wr_en,
+    input  wire             pras_data_in,
+
+    output wire [N-1:0]     scan_out,
+    output wire             pras_data_out
+);
+
+    // =========================================================
+    // Mode decode
+    // =========================================================
+    wire psas_active = mode[1];
+    wire pras_active = mode[0];
+
+    // =========================================================
+    // LFSR (generic safe taps)
+    // =========================================================
+    reg [W-1:0] lfsr;
+
+    wire feedback;
+    assign feedback = lfsr[W-1] ^ lfsr[W-3];
+
+    wire [W-1:0] shifted;
+    assign shifted = {lfsr[W-2:0], feedback};
+
+    // =========================================================
+    // 🔥 SCALABLE INJECTION (replaces fixed comp_in[0], [1])
+    // =========================================================
+    reg [W-1:0] injected;
+
+    integer i;
+
+    always @(*) begin
+        injected = shifted;
+
+        if (seed_en) begin
+            for (i = 0; i < C; i = i + 1) begin
+                injected[i] = shifted[i] ^ comp_in[i];
+            end
+        end
+    end
+
+    // =========================================================
+    // LFSR register
+    // =========================================================
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n)
+            lfsr <= {W{1'b1}};
+        else if (psas_active && scan_en)
+            lfsr <= injected;
+    end
+
+    // =========================================================
+    // 🔥 SCALABLE PHASE SHIFTER (replaces fixed 8 outputs)
+    // =========================================================
+    wire [N-1:0] phase_out;
+
+    genvar j;
+    generate
+        for (j = 0; j < N; j = j + 1) begin : GEN_PS
+
+            // wrap manually (Vivado safe)
+            wire [$clog2(W)-1:0] a = (j < W) ? j : (j - W);
+            wire [$clog2(W)-1:0] b = ((j+3) < W) ? (j+3) : (j+3-W);
+            wire [$clog2(W)-1:0] c = ((j+7) < W) ? (j+7) : (j+7-W);
+
+            assign phase_out[j] =
+                lfsr[a] ^
+                lfsr[b] ^
+                lfsr[c];
+
+        end
+    endgenerate
+
+    // Output gating
+    assign scan_out = psas_active ? phase_out : {N{1'b0}};
+
+    // =========================================================
+    // PRAS (UNCHANGED - already scalable ✔)
+    // =========================================================
+    localparam TOTAL = R_ROWS * R_COLS;
+
+    reg [TOTAL-1:0] pras_mem;
+
+    wire [R_ROWS-1:0] row_sel;
+    genvar r;
+    generate
+        for (r = 0; r < R_ROWS; r = r + 1)
+            assign row_sel[r] = (row_addr == r[RA-1:0]);
+    endgenerate
+
+    wire [R_COLS-1:0] col_sel;
+    genvar c;
+    generate
+        for (c = 0; c < R_COLS; c = c + 1)
+            assign col_sel[c] = (col_addr == c[CA-1:0]);
+    endgenerate
+
+    integer wr_r, wr_c;
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n)
+            pras_mem <= {TOTAL{1'b0}};
+        else if (pras_active && pras_wr_en) begin
+            for (wr_r = 0; wr_r < R_ROWS; wr_r = wr_r + 1)
+                for (wr_c = 0; wr_c < R_COLS; wr_c = wr_c + 1)
+                    if (row_sel[wr_r] && col_sel[wr_c])
+                        pras_mem[(wr_r * R_COLS) + wr_c] <= pras_data_in;
+        end
+    end
+
+    integer rd_r, rd_c;
+    reg pras_read;
+
+    always @(*) begin
+        pras_read = 1'b0;
+        if (pras_active) begin
+            for (rd_r = 0; rd_r < R_ROWS; rd_r = rd_r + 1)
+                for (rd_c = 0; rd_c < R_COLS; rd_c = rd_c + 1)
+                    if (row_sel[rd_r] && col_sel[rd_c])
+                        pras_read = pras_mem[(rd_r * R_COLS) + rd_c];
+        end
+    end
+
+    assign pras_data_out = pras_read;
+
+endmodule
